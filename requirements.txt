@@ -1,0 +1,14 @@
+streamlit
+python-dotenv
+sounddevice
+numpy
+scipy
+requests
+soundfile
+pydub
+ffmpeg-python
+pyaudio
+SpeechRecognition
+streamlit_mic_recorder
+fuzzywuzzy
+textdistance
