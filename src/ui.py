@@ -9,7 +9,6 @@ import re
 from streamlit_mic_recorder import mic_recorder
 import soundfile as sf
 import io
-from datetime import datetime
 
 # Adjust import paths
 try:
@@ -82,10 +81,6 @@ def add_message_to_conversation(role: str, content: str, lang_code: Optional[str
     if lang_code and role == "user":
         message["lang"] = lang_code 
     st.session_state.conversation.append(message)
-
-    # To reset feedback form after each new assistant response
-    if role == "assistant":
-        st.session_state.feedback_submitted = False
 
 # --- Streamlit UI ---
 def main_ui():
@@ -341,23 +336,9 @@ def main_ui():
                 role = msg_data.get("role", "system"); content = msg_data.get("content", "")
                 avatar = "🧑‍💻" if role == "user" else "⚕️"
                 if role == "user":
-                    # with st.chat_message(role):
-                    lang_display = msg_data.get('lang', st.session_state.current_language_code.split('-')[0])
-                    # st.markdown(f"""
-                    #     <div style="text-align: right;">{content} *({lang_display})*</div>
-                    #     """,
-                    #     unsafe_allow_html=True
-                    # )
-                    st.markdown(
-                        f"""
-                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 0.5rem;">
-                            <div style="max-width: 80%; text-align: right; margin-right: 0.5rem;">{content} <b>({lang_display})</b> </div>
-                            <div style="width: 32px; height: 32px; border-radius: 15%; border: .5px solid #ccc; background-color: transparent; display: flex; align-items: center; justify-content: center;">🧑‍💻</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    # st.markdown(f"{content} *({lang_display})*")
+                    with st.chat_message(role, avatar=avatar):
+                        lang_display = msg_data.get('lang', st.session_state.current_language_code.split('-')[0])
+                        st.markdown(f"{content} *({lang_display})*")
                 elif role == "assistant":
                     with st.chat_message(role, avatar=avatar): 
                         st.markdown(content) 
@@ -407,64 +388,6 @@ def main_ui():
             st.rerun()
     # The old `if send_button and user_query_text_from_area:` block is now removed,
     # as its logic is handled by the handle_text_submission callback.
-
-    # --- Feedback Button and Form ---
-    if any(
-        msg["role"] == "assistant"
-        and not msg.get("content", "").strip().startswith("Regarding ")
-        for msg in st.session_state.conversation
-    ):
-        feedback_section()
-
-def feedback_section():
-    st.markdown("---")
-    st.markdown("### 🙋 Was this answer helpful?")
-
-    if "feedback_submitted" not in st.session_state:
-        st.session_state.feedback_submitted = False
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("👍 Yes", key="thumbs_up"):
-            feedback_data = {
-                "timestamp": str(datetime.now()),
-                "feedback": "thumbs_up"
-            }
-            os.makedirs("feedback", exist_ok=True)
-            with open("feedback/feedback_log.jsonl", "a", encoding="utf-8") as f:
-                f.write(json.dumps(feedback_data) + "\n")
-            st.success("Thanks for your feedback!")
-            st.session_state.feedback_submitted = True
-
-    with col2:
-        if st.button("👎 No", key="thumbs_down"):
-            feedback_data = {
-                "timestamp": str(datetime.now()),
-                "feedback": "thumbs_down"
-            }
-            os.makedirs("feedback", exist_ok=True)
-            with open("feedback/feedback_log.jsonl", "a", encoding="utf-8") as f:
-                f.write(json.dumps(feedback_data) + "\n")
-            st.info("Sorry to hear that. Please tell us more below!")
-            st.session_state.feedback_submitted = True
-
-    if not st.session_state.feedback_submitted:
-        st.markdown("#### Additional comments (optional):")
-        with st.form(key='feedback_form'):
-            feedback_text = st.text_area("Your feedback", height=100)
-            submitted = st.form_submit_button("Submit Feedback")
-            if submitted and feedback_text.strip():
-                feedback_data = {
-                    "timestamp": str(datetime.now()),
-                    "feedback": "text",
-                    "text": feedback_text.strip()
-                }
-                os.makedirs("feedback", exist_ok=True)
-                with open("feedback/feedback_log.jsonl", "a", encoding="utf-8") as f:
-                    f.write(json.dumps(feedback_data) + "\n")
-                st.success("Thank you for your detailed feedback!")
-                st.session_state.feedback_submitted = True
 
 if __name__ == "__main__":
     main_ui()
