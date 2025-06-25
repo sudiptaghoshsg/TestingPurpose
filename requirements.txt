@@ -13,3 +13,4 @@ streamlit_mic_recorder
 fuzzywuzzy
 textdistance
 firebase-admin
+python-Levenshtein
